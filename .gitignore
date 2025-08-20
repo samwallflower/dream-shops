@@ -4,6 +4,19 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Secrets
+application-secrets.properties
+application-local.properties
+application-dev.properties
+*.jks
+*.p12
+*.cer
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
 ### STS ###
 .apt_generated
 .classpath

@@ -8,11 +8,13 @@ import com.andromeda.dreamshops.response.ApiResponse;
 import com.andromeda.dreamshops.service.cart.ICartItemService;
 import com.andromeda.dreamshops.service.cart.ICartService;
 import com.andromeda.dreamshops.service.user.IUserService;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 
 @RequiredArgsConstructor
@@ -35,7 +37,7 @@ public class CartItemController {
     public ResponseEntity<ApiResponse> addItemToCart(@RequestParam Long productId,
                                                      @RequestParam int quantity) {
         try {
-            User user = userService.getUserById(5L);
+            User user = userService.getAuthenticatedUser();
 
             Cart cart = cartService.initializeNewCart(user);
 
@@ -44,6 +46,9 @@ public class CartItemController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND)
                     .body(new ApiResponse( e.getMessage(), null));
+        }catch (JwtException e){
+            return ResponseEntity.status(UNAUTHORIZED)
+                    .body(new ApiResponse(e.getMessage(), null));
         }
     }
 
