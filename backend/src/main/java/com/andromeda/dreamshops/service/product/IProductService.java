@@ -8,11 +8,11 @@ import com.andromeda.dreamshops.request.ProductUpdateRequest;
 import java.util.List;
 
 public interface IProductService {
-    Product addProduct(AddProductRequest product);
+    Product addProduct(AddProductRequest product, Long shopId);
 
     Product getProductById(Long id);
-    void deleteProductById(Long id);
-    Product updateProduct(ProductUpdateRequest product, Long productId);
+    void deleteProductById(Long id, Long shopId);
+    Product updateProduct(ProductUpdateRequest product, Long productId, Long shopId);
     List<Product> getAllProducts();
     List<Product> getAllProductsByCategory(String category);
     List<Product> getProductsByBrand(String brand);
@@ -25,4 +25,29 @@ public interface IProductService {
     List<ProductDto> getConvertedProducts(List<Product> products);
 
     ProductDto convertToDto(Product product);
+
+    // shop related product methods
+    // MacBook Pro 14 in shop with id 1
+    Product getProductByShopIdAndProductId(Long shopId, Long productId);
+
+    // All products in shop with id 1
+    List<Product> getAllProductsByShopId(Long shopId);
+
+    // All products in Rio Electronics
+    List<Product> getAllProductsByShopName(String shopName);
+
+    // All laptops in Rio Electronics
+    List<Product> getAllProductsByShopAndCategory(String shopName, String categoryName);
+
+    // All Apple products in Rio Electronics
+    List<Product> getAllProductsByShopAndBrand(String shopName, String brand);
+
+    // All Apple laptops in Rio Electronics
+    List<Product> getAllProductsByShopBrandAndCategory(String shopName, String brand, String categoryName);
+
+    // MacBook Pro 14 in Rio Electronics
+    Product getProductByShopNameAndProductName(String shopName, String productName);
+
+    // Counting all products in a shop
+    Long countProductsByShopId(Long shopId);
 }

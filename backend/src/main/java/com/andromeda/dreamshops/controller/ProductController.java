@@ -48,10 +48,10 @@ public class ProductController {
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping("/add")
-    public ResponseEntity<ApiResponse> addProduct(@RequestBody AddProductRequest product) {
+    @PostMapping("/shop/{shopId}/product/add")
+    public ResponseEntity<ApiResponse> addProduct(@RequestBody AddProductRequest product, @PathVariable Long shopId) {
         try {
-            Product savedProduct = productService.addProduct(product);
+            Product savedProduct = productService.addProduct(product, shopId);
             ProductDto productDto = productService.convertToDto(savedProduct);
             return ResponseEntity.ok(new ApiResponse("Product added successfully", productDto));
         } catch (AlreadyExistsException e) {
@@ -61,10 +61,10 @@ public class ProductController {
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PutMapping("/product/{productId}/update")
-    public ResponseEntity<ApiResponse> updateProduct(@PathVariable Long productId, @RequestBody ProductUpdateRequest request) {
+    @PutMapping("/shop/{shopId}/product/{productId}/update")
+    public ResponseEntity<ApiResponse> updateProduct(@PathVariable Long productId, @RequestBody ProductUpdateRequest request, @PathVariable Long shopId) {
         try {
-            Product updatedProduct = productService.updateProduct( request, productId);
+            Product updatedProduct = productService.updateProduct( request, productId, shopId);
             ProductDto productDto = productService.convertToDto(updatedProduct);
             return ResponseEntity.ok(new ApiResponse("Product updated successfully", productDto));
         } catch (ResourceNotFoundException e) {
@@ -74,10 +74,10 @@ public class ProductController {
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @DeleteMapping("/product/{productId}/delete")
-    public ResponseEntity<ApiResponse> deleteProduct(@PathVariable Long productId) {
+    @DeleteMapping("/shop/{shopId}/product/{productId}/delete")
+    public ResponseEntity<ApiResponse> deleteProduct(@PathVariable Long productId, @PathVariable Long shopId) {
         try {
-            productService.deleteProductById(productId);
+            productService.deleteProductById(productId, shopId);
             return ResponseEntity.ok(new ApiResponse("Product deleted successfully", productId));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND)
@@ -172,6 +172,87 @@ public class ProductController {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(e.getMessage(), null));
         }
+    }
+
+    // shop related product endpoints
+    @GetMapping("/product/by/shop-and-product-id")
+    public ResponseEntity<ApiResponse> getProductByShopIdAndProductId(@RequestParam Long shopId,
+                                                                @RequestParam Long productId) {
+        try {
+            Product product = productService.getProductByShopIdAndProductId(shopId, productId);
+            ProductDto productDto = productService.convertToDto(product);
+            return ResponseEntity.ok(new ApiResponse("Product retrieved successfully", productDto));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/shops/{shopId}/products")
+    public ResponseEntity<ApiResponse> getAllProductsByShopId(@PathVariable Long shopId) {
+        List<Product> products = productService.getAllProductsByShopId(shopId);
+        List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+        return convertedProducts.isEmpty()
+                ? ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found for shop id: " + shopId, null))
+                : ResponseEntity.ok(new ApiResponse("Products for shop id: " + shopId + " retrieved successfully", convertedProducts));
+    }
+
+    //ALl products in Rio Electronics
+    @GetMapping("/shops/shopName/products")
+    public ResponseEntity<ApiResponse> getAllProductsByShopName(@RequestParam String shopName) {
+        List<Product> products = productService.getAllProductsByShopName(shopName);
+        List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+        return convertedProducts.isEmpty()
+                ? ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found for shop name: " + shopName, null))
+                : ResponseEntity.ok(new ApiResponse("Products for shop name: " + shopName + " retrieved successfully", convertedProducts));
+    }
+
+    // All gadgets in Rio Electronics
+    @GetMapping("/products/by/shop-and-category")
+    public ResponseEntity<ApiResponse> getAllProductsByShopAndCategory(@RequestParam String shopName, @RequestParam String categoryName) {
+        List<Product> products = productService.getAllProductsByShopAndCategory(shopName, categoryName);
+        List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+        return convertedProducts.isEmpty()
+                ? ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found for shop: " + shopName + " and category: " + categoryName, null))
+                : ResponseEntity.ok(new ApiResponse("Products for shop: " + shopName + " and category: " + categoryName + " retrieved successfully", convertedProducts));
+    }
+
+    // All Apple products in Rio Electronics (laptops , phones , gadgets etc)
+    @GetMapping("/products/by/shop-and-brand")
+    public ResponseEntity<ApiResponse> getAllProductsByShopAndBrand(@RequestParam String shopName, @RequestParam String brand) {
+        List<Product> products = productService.getAllProductsByShopAndBrand(shopName, brand);
+        List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+        return convertedProducts.isEmpty()
+                ? ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found for shop: " + shopName + " and brand: " + brand, null))
+                : ResponseEntity.ok(new ApiResponse("Products for shop: " + shopName + " and brand: " + brand + " retrieved successfully", convertedProducts));
+    }
+
+    // All Apple phones in Rio Electronics
+    @GetMapping("/products/by/shop-brand-and-category")
+    public ResponseEntity<ApiResponse> getAllProductsByShopBrandAndCategory(@RequestParam String shopName, @RequestParam String brand, @RequestParam String categoryName) {
+        List<Product> products = productService.getAllProductsByShopBrandAndCategory(shopName, brand, categoryName);
+        List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+        return convertedProducts.isEmpty()
+                ? ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found for shop: " + shopName + ", brand: " + brand + " and category: " + categoryName, null))
+                : ResponseEntity.ok(new ApiResponse("Products for shop: " + shopName + ", brand: " + brand + " and category: " + categoryName + " retrieved successfully", convertedProducts));
+    }
+
+    // iPhone 13 in Rio Electronics
+    @GetMapping("/product/by/shop-and-product-name")
+    public ResponseEntity<ApiResponse> getProductByShopNameAndProductName(@RequestParam String shopName, @RequestParam String productName) {
+        try {
+            Product product = productService.getProductByShopNameAndProductName(shopName, productName);
+            ProductDto productDto = productService.convertToDto(product);
+            return ResponseEntity.ok(new ApiResponse("Product retrieved successfully", productDto));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/product/count/by/shop-id")
+    public Long countProductsByShopId(@RequestParam Long shopId) {
+        return productService.countProductsByShopId(shopId);
     }
 
 }

@@ -36,4 +36,7 @@ public class User {
     )
     private Collection<Role> roles = new HashSet<>();
 
+    @OneToOne(mappedBy = "shopOwner", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Shop shop;
+
 }

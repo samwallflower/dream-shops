@@ -10,11 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -111,6 +111,14 @@ public class OrderService implements IOrderService{
     public List<OrderDto> getUserOrders(Long userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
 
+        return orders.stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
+    @Override
+    public List<OrderDto> getOrdersByShopId(Long shopId) {
+        List<Order> orders = orderRepository.findByShopId(shopId);
         return orders.stream()
                 .map(this::convertToDto)
                 .toList();

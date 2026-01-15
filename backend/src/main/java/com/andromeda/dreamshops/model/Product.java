@@ -31,6 +31,10 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images;
 
+    @ManyToOne
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
     public Product(String name,
                    String brand,
                    BigDecimal price,

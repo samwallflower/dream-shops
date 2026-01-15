@@ -29,6 +29,10 @@ public class Order {
     private Set<OrderItem> orderItems = new HashSet<>();
 
     @ManyToOne
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 }

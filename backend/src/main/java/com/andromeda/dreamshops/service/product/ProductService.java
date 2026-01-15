@@ -22,36 +22,44 @@ public class ProductService implements IProductService{
     private final CategoryRepository categoryRepository;
     private final ImageRepository imageRepository;
     private final ModelMapper modelMapper;
+    private final ShopRepository shopRepository;
     /**
      * @param  request
      * @return the saved product
      * @throws AlreadyExistsException if a product with the same name and brand already exists
      */
     @Override
-    public Product addProduct(AddProductRequest request) {
+    public Product addProduct(AddProductRequest request, Long shopId) {
         //check if the category is found in the database
         //if yes, set it as new product category
         //if no , then save it as a new category
         //then set it as the new product category
-        if (isProductExists(request.getName(), request.getBrand())) {
-            throw new AlreadyExistsException("Product already exists with name: " + request.getName() + " and brand: " + request.getBrand()
-            + " , you may update this product instead.");
+
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(()-> new ResourceNotFoundException("Shop not found with id: " + shopId));
+
+        if(isProductExists(request.getName(), shop.getName())){
+            throw new AlreadyExistsException("Product already exists with name: " + request.getName() + " in shop: " + shop.getName()
+                    + " , you may update this product instead.");
         }
+
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(()->{
                     Category newCategory = new Category(request.getCategory().getName());
                     return categoryRepository.save(newCategory);
                 });
+
         request.setCategory(category);
-        return productRepository.save(createProduct(request, category));
+        return productRepository.save(createProduct(request, category, shop));
     }
 
-    private boolean isProductExists(String name, String brand) {
-        return productRepository.existsByNameAndBrand(name, brand);
+    private boolean isProductExists(String name, String shopName) {
+        return productRepository.existsByNameAndShopName(name, shopName);
     }
 
-    private Product createProduct(AddProductRequest request, Category category){
-        return new Product(
+    private Product createProduct(AddProductRequest request, Category category, Shop shop) {
+
+        Product product = new Product(
                 request.getName(),
                 request.getBrand(),
                 request.getPrice(),
@@ -59,7 +67,8 @@ public class ProductService implements IProductService{
                 request.getDescription(),
                 category
         );
-
+        product.setShop(shop);
+        return product;
     }
 
     /**
@@ -76,10 +85,10 @@ public class ProductService implements IProductService{
      * @param id
      */
     @Override
-    public void deleteProductById(Long id) {
-        productRepository.findById(id)
+    public void deleteProductById(Long id, Long shopId) {
+        productRepository.findByIdAndShopId(id, shopId)
                 .ifPresentOrElse(productRepository::delete,
-                        ()-> {throw new ResourceNotFoundException("Product not found!");});
+                        ()-> {throw new ResourceNotFoundException("Product not found with id: " + id + " in shop with id: " + shopId);});
     }
 
     /**
@@ -87,8 +96,8 @@ public class ProductService implements IProductService{
      * @param productId
      */
     @Override
-    public Product updateProduct(ProductUpdateRequest request, Long productId) {
-        return productRepository.findById(productId)
+    public Product updateProduct(ProductUpdateRequest request, Long productId, Long shopId) {
+        return productRepository.findByIdAndShopId(productId, shopId)
                 .map(existingProduct -> updateExistingProduct(existingProduct, request))
                 .map(productRepository::save)
                 .orElseThrow(()-> new ResourceNotFoundException("Product not Found!"));
@@ -96,17 +105,19 @@ public class ProductService implements IProductService{
 
     private Product updateExistingProduct(Product existingProduct,
                                           ProductUpdateRequest request){
-        existingProduct.setName(request.getName());
-        existingProduct.setBrand(request.getBrand());
-        existingProduct.setPrice(request.getPrice());
-        existingProduct.setInventory(request.getInventory());
-        existingProduct.setDescription(request.getDescription());
+        Optional.ofNullable(request.getName()).ifPresent(existingProduct::setName);
+        Optional.ofNullable(request.getBrand()).ifPresent(existingProduct::setBrand);
+        Optional.ofNullable(request.getPrice()).ifPresent(existingProduct::setPrice);
+        Optional.ofNullable(request.getInventory()).ifPresent(existingProduct::setInventory);
+        Optional.ofNullable(request.getDescription()).ifPresent(existingProduct::setDescription);
 
-        Category category = categoryRepository.findByName(request.getCategory().getName());
+        Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
+                .orElseGet(()->{
+                    Category newCategory = new Category(request.getCategory().getName());
+                    return categoryRepository.save(newCategory);
+                });
         existingProduct.setCategory(category);
-
         return existingProduct;
-
     }
 
     /**
@@ -190,5 +201,49 @@ public class ProductService implements IProductService{
                 .toList();
         productDto.setImages(imageDtos);
         return modelMapper.map(product, ProductDto.class);
+    }
+
+    // shop related product methods
+
+    @Override
+    public Product getProductByShopIdAndProductId(Long shopId, Long productId) {
+        return productRepository.findByIdAndShopId(productId, shopId)
+                .orElseThrow(()-> new ResourceNotFoundException("Product not found in the specified shop!"));
+    }
+
+    @Override
+    public List<Product> getAllProductsByShopId(Long shopId) {
+        return productRepository.findByShopId(shopId);
+    }
+
+    @Override
+    public List<Product> getAllProductsByShopName(String shopName) {
+        return productRepository.findByShopName(shopName);
+    }
+
+    @Override
+    public List<Product> getAllProductsByShopAndCategory(String shopName, String categoryName) {
+        return productRepository.findByShopNameAndCategoryName(shopName, categoryName);
+    }
+
+    @Override
+    public List<Product> getAllProductsByShopAndBrand(String shopName, String brand) {
+        return productRepository.findByShopNameAndBrand(shopName, brand);
+    }
+
+    @Override
+    public List<Product> getAllProductsByShopBrandAndCategory(String shopName, String brand, String categoryName) {
+        return productRepository.findByShopNameAndBrandAndCategoryName(shopName, brand, categoryName);
+    }
+
+    @Override
+    public Product getProductByShopNameAndProductName(String shopName, String productName) {
+        return productRepository.findByShopNameAndName(shopName, productName)
+                .orElseThrow(()-> new ResourceNotFoundException("Product not found in the specified shop!"));
+    }
+
+    @Override
+    public Long countProductsByShopId(Long shopId) {
+        return productRepository.countByShopId(shopId);
     }
 }
