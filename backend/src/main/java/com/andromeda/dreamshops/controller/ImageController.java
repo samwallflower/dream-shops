@@ -25,7 +25,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class ImageController {
     private final IImageService imageService;
 
-
+    // upload images
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse> saveImages(@RequestParam List<MultipartFile> files, @RequestParam Long productId){
         try {
@@ -36,6 +36,7 @@ public class ImageController {
         }
     }
 
+    // download image
     @GetMapping("/image/download/{imageId}")
     public ResponseEntity<Resource> downloadImage(@PathVariable Long imageId) throws SQLException {
         Image image = imageService.getImagebyId(imageId);
@@ -45,7 +46,7 @@ public class ImageController {
                 .body(resource);
     }
 
-
+    // update image
     @PutMapping("/image/{imageId}/update")
     public ResponseEntity<ApiResponse> updateImage(@PathVariable Long imageId, @RequestBody MultipartFile file){
         try {
@@ -60,6 +61,7 @@ public class ImageController {
         return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Update failed!", INTERNAL_SERVER_ERROR));
     }
 
+    // delete image
     @DeleteMapping("/image/{imageId}/delete")
     public ResponseEntity<ApiResponse> deleteImage(@PathVariable Long imageId){
         try {
@@ -72,5 +74,19 @@ public class ImageController {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         }
         return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Update failed!", INTERNAL_SERVER_ERROR));
+    }
+
+    // get all images by product id
+    @GetMapping("/product/{productId}/images")
+    public ResponseEntity<ApiResponse> getImagesByProductId(@PathVariable Long productId) {
+        try {
+            List<Image> images = imageService.getImagesByProductId(productId);
+            List<ImageDto> imageDtos = imageService.convertToDtoList(images);
+            return !imageDtos.isEmpty() ?
+                    ResponseEntity.ok(new ApiResponse("Images found!", imageDtos)) :
+                    ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No images found for product id: " + productId, null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Error: "+ e.getMessage(), null));
+        }
     }
 }

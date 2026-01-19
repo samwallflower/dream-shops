@@ -1,5 +1,6 @@
 package com.andromeda.dreamshops.service.cart;
 
+import com.andromeda.dreamshops.exceptions.GeneralException;
 import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.model.*;
 import com.andromeda.dreamshops.repository.*;
@@ -28,11 +29,21 @@ public class CartItemService implements ICartItemService{
 
         Cart cart = cartService.getCart(cartId);
         Product product = productService.getProductById(productId);
+
+        cart.getItems().stream()
+                .findFirst()
+                .ifPresent(item -> {
+                    if (!item.getProduct().getShop().getId().equals(product.getShop().getId())) {
+                        throw new GeneralException("Cannot add products from different shops to the same cart.");
+                    }
+                });
+
         CartItem cartItem = cart.getItems()
                 .stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
                 .findFirst()
                 .orElse(new CartItem());
+
         if(cartItem.getId()== null){
             cartItem.setCart(cart);
             cartItem.setProduct(product);

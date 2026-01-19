@@ -50,18 +50,15 @@ public class ImageService implements IImageService{
                 image.setProduct(product);
 
                 String buildDownloadUrl = "/api/v1/images/image/download/";
-               // String downloadUrl = buildDownloadUrl + image.getId();
-               // image.setDownloadUrl(downloadUrl);
+                //String downloadUrl = buildDownloadUrl + image.getId();
+                //image.setDownloadUrl(downloadUrl);
 
                 Image savedImage =  imageRepository.save(image);
 
                 savedImage.setDownloadUrl(buildDownloadUrl + savedImage.getId());
                 imageRepository.save(savedImage);
 
-                ImageDto imageDto = new ImageDto();
-                imageDto.setId(savedImage.getId());
-                imageDto.setFileName(savedImage.getFileName());
-                imageDto.setDownloadUrl(savedImage.getDownloadUrl());
+                ImageDto imageDto = convertToDto(savedImage);
                 savedImageDto.add(imageDto);
 
             } catch (SQLException | IOException e) {
@@ -81,6 +78,27 @@ public class ImageService implements IImageService{
         } catch (SQLException | IOException e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    @Override
+    public List<Image> getImagesByProductId(Long productId) {
+        return imageRepository.findByProductId(productId);
+    }
+
+    @Override
+    public ImageDto convertToDto(Image image) {
+        ImageDto imageDto = new ImageDto();
+        imageDto.setId(image.getId());
+        imageDto.setFileName(image.getFileName());
+        imageDto.setDownloadUrl(image.getDownloadUrl());
+        return imageDto;
+    }
+
+    @Override
+    public List<ImageDto> convertToDtoList(List<Image> images) {
+        return images.stream()
+                .map(this::convertToDto)
+                .toList();
     }
 
 

@@ -54,7 +54,9 @@ public class ShopController {
             return shop != null ?
                     ResponseEntity.ok(new ApiResponse("Shop retrieved successfully", shopDto)) :
                     ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No shop found with the given name", null));
-        } catch (Exception e) {
+        } catch (ResourceNotFoundException e){
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
         }
     }

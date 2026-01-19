@@ -76,7 +76,10 @@ public class ShopService implements IShopService{
 
     @Override
     public Shop getShopByName(String name) {
-        return shopRepository.findByName(name);
+
+        return shopRepository.findByName(name).orElseThrow(
+                ()-> new ResourceNotFoundException("Shop not found with name: " + name)
+        );
     }
 
     @Override

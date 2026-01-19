@@ -1,6 +1,7 @@
 package com.andromeda.dreamshops.controller;
 
 
+import com.andromeda.dreamshops.exceptions.GeneralException;
 import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.model.Cart;
 import com.andromeda.dreamshops.model.User;
@@ -13,8 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.*;
 
 
 @RequiredArgsConstructor
@@ -43,7 +43,10 @@ public class CartItemController {
 
             cartItemService.addItemToCart(cart.getId(), productId, quantity);
             return ResponseEntity.ok(new ApiResponse("Item added to cart successfully", null));
-        } catch (ResourceNotFoundException e) {
+        }catch(GeneralException e){
+            return ResponseEntity.status(CONFLICT)
+                    .body(new ApiResponse(e.getMessage(), null));
+        }catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND)
                     .body(new ApiResponse( e.getMessage(), null));
         }catch (JwtException e){

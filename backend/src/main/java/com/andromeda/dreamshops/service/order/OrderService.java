@@ -2,6 +2,7 @@ package com.andromeda.dreamshops.service.order;
 
 import com.andromeda.dreamshops.dto.OrderDto;
 import com.andromeda.dreamshops.enums.OrderStatus;
+import com.andromeda.dreamshops.exceptions.GeneralException;
 import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.model.*;
 import com.andromeda.dreamshops.repository.*;
@@ -51,6 +52,14 @@ public class OrderService implements IOrderService{
 
     private Order createOrder(Cart cart){
         Order order = new Order();
+        Shop shop = cart.getItems()
+                .stream()
+                .findFirst()
+                .map(cartItem -> cartItem
+                        .getProduct().getShop())
+                .orElseThrow(()->
+                        new ResourceNotFoundException("No items in cart found. Add items to cart before placing an order."));
+        order.setShop(shop);
         order.setUser(cart.getUser());
         order.setOrderStatus(OrderStatus.PENDING);
         order.setOrderDate(LocalDate.now());
@@ -127,5 +136,66 @@ public class OrderService implements IOrderService{
     @Override
     public OrderDto convertToDto(Order order) {
         return modelMapper.map(order, OrderDto.class);
+    }
+
+    // order status flow - PENDING -> CONFIRMED -> PROCESSING -> SHIPPED -> IN_TRANSIT -> DELIVERED
+    // From only PENDING either we can go to CONFIRMED or CANCELLED
+    // From CONFIRMED we can go to PROCESSING then SHIPPED IN_TRANSIT then DELIVERED
+    // once an order is CONFIRMED it can no longer be CANCELLED
+
+    @Override
+    public OrderDto updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        OrderStatus currentStatus = order.getOrderStatus();
+
+        if (status.equals(OrderStatus.PENDING)){
+            throw new GeneralException("Cannot revert order status back to PENDING.");
+        }
+
+        if (currentStatus == OrderStatus.CANCELLED || currentStatus == OrderStatus.DELIVERED) {
+            throw new GeneralException("Cannot change status of a " + currentStatus + " order.");
+        }
+
+        order.setOrderStatus(status);
+        return convertToDto(orderRepository.save(order));
+    }
+
+    @Override
+    public OrderDto confirmOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (!order.getOrderStatus().equals(OrderStatus.PENDING)) {
+            throw new GeneralException("Only pending orders can be confirmed. Current status: " + order.getOrderStatus());
+        }
+        order.setOrderStatus(OrderStatus.CONFIRMED);
+        return convertToDto(orderRepository.save(order));
+    }
+
+    @Override
+    public OrderDto cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        // basically we need to check if the order is already cancelled or completed
+        // only if the order is pending we can cancel it
+        // if it is anything other than pending we cannot cancel it
+        // anything that is not pending means it is either confirmed or cancelled or delivered
+        // so only checking for pending status works
+        if (!order.getOrderStatus().equals(OrderStatus.PENDING)) {
+            throw new GeneralException("Order is already " + order.getOrderStatus() + " and cannot be cancelled at this point.");
+        }
+
+        restockInventory(order);
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        return convertToDto(orderRepository.save(order));
+    }
+
+    private void restockInventory(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setInventory(product.getInventory() + item.getQuantity());
+            productRepository.save(product);
+        }
     }
 }

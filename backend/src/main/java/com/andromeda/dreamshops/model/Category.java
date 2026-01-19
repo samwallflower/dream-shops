@@ -17,6 +17,11 @@ public class Category {
     private Long id;
     private String name;
 
+
+    @ManyToOne
+    @JoinColumn(name = "parent_category_id")
+    private Category parentCategory;
+
     @JsonIgnore
     @OneToMany(mappedBy = "category")
     private List<Product> products;

@@ -25,7 +25,7 @@ public class ProductController {
 
     private final IProductService productService;
 
-
+    //get all products
     @GetMapping("/all")
     public ResponseEntity<ApiResponse> getAllProducts(){
         List<Product> products = productService.getAllProducts();
@@ -35,6 +35,7 @@ public class ProductController {
                 : ResponseEntity.ok(new ApiResponse("Products retrieved successfully", convertedProducts));
     }
 
+    //get product by id
     @GetMapping("product/{productId}/product")
     public ResponseEntity<ApiResponse> getProductById(@PathVariable Long productId) {
         try {
@@ -47,7 +48,8 @@ public class ProductController {
         }
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    // add product to shop
+    //@PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/shop/{shopId}/product/add")
     public ResponseEntity<ApiResponse> addProduct(@RequestBody AddProductRequest product, @PathVariable Long shopId) {
         try {
@@ -60,7 +62,8 @@ public class ProductController {
         }
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    // update product
+   // @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/shop/{shopId}/product/{productId}/update")
     public ResponseEntity<ApiResponse> updateProduct(@PathVariable Long productId, @RequestBody ProductUpdateRequest request, @PathVariable Long shopId) {
         try {
@@ -73,7 +76,8 @@ public class ProductController {
         }
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    // delete product
+   // @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/shop/{shopId}/product/{productId}/delete")
     public ResponseEntity<ApiResponse> deleteProduct(@PathVariable Long productId, @PathVariable Long shopId) {
         try {
@@ -85,6 +89,7 @@ public class ProductController {
         }
     }
 
+    // search products by brand and name
     @GetMapping("products/by/brand-and-name")
     public ResponseEntity<ApiResponse> getProductByBrandAndName(@RequestParam String brandName,
                                                                 @RequestParam String productName) {
@@ -101,6 +106,7 @@ public class ProductController {
         }
     }
 
+    // search products by category and brand
     @GetMapping("products/by/category-and-brand")
     public ResponseEntity<ApiResponse> getProductByCategoryAndBrand(@RequestParam String category,
                                                                       @RequestParam String brand) {
@@ -117,8 +123,9 @@ public class ProductController {
         }
     }
 
-    @GetMapping("products/{name}/products")
-    public ResponseEntity<ApiResponse> getProductsByName(@PathVariable String name) {
+    // search products by name - iphone 17
+    @GetMapping("products/by/name/products")
+    public ResponseEntity<ApiResponse> getProductsByName(@RequestParam String name) {
         try {
             List<Product> products = productService.getProductsByName(name);
             List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
@@ -132,6 +139,7 @@ public class ProductController {
         }
     }
 
+    // search products by brand - Apple , Samsung , Dell , HP , Sony , LG , Asus , Acer
     @GetMapping("/product/by-brand")
     public ResponseEntity<ApiResponse> getProductsByBrand(@RequestParam String brand) {
         try {
@@ -147,8 +155,9 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/product/{category}/all/products")
-    public ResponseEntity<ApiResponse> getAllProductsByCategory(@PathVariable String category) {
+    // search products by category - laptops , phones , gadgets , accessories , peripherals , software , gaming , networking
+    @GetMapping("/product/by/category/all/products")
+    public ResponseEntity<ApiResponse> getAllProductsByCategory(@RequestParam String category) {
         try {
             List<Product> products = productService.getAllProductsByCategory(category);
             List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
@@ -162,6 +171,7 @@ public class ProductController {
         }
     }
 
+    // count products by brand and name - Apple iPhone 13
     @GetMapping("/product/count/by-brand/and-name")
     public ResponseEntity<ApiResponse> countProductsByBrandAndName(@RequestParam String brandName,
                                                                       @RequestParam String productName) {
@@ -175,6 +185,7 @@ public class ProductController {
     }
 
     // shop related product endpoints
+    // product 1 in shop 2
     @GetMapping("/product/by/shop-and-product-id")
     public ResponseEntity<ApiResponse> getProductByShopIdAndProductId(@RequestParam Long shopId,
                                                                 @RequestParam Long productId) {
@@ -188,6 +199,7 @@ public class ProductController {
         }
     }
 
+    // All products in shop id 2
     @GetMapping("/shops/{shopId}/products")
     public ResponseEntity<ApiResponse> getAllProductsByShopId(@PathVariable Long shopId) {
         List<Product> products = productService.getAllProductsByShopId(shopId);
@@ -250,9 +262,15 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/product/count/by/shop-id")
-    public Long countProductsByShopId(@RequestParam Long shopId) {
-        return productService.countProductsByShopId(shopId);
+    @GetMapping("/product/count/by/{shopId}")
+    public ResponseEntity<ApiResponse> countProductsByShopId(@PathVariable Long shopId) {
+        try {
+            var productCount = productService.countProductsByShopId(shopId);
+            return ResponseEntity.ok(new ApiResponse("Product count for shop id: " + shopId, productCount));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(e.getMessage(), null));
+        }
     }
 
 }

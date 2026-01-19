@@ -20,6 +20,7 @@ import static org.springframework.http.HttpStatus.*;
 public class CategoryController {
     private final ICategoryService categoryService;
 
+    // Get all categories
     @GetMapping("/all")
     public ResponseEntity<ApiResponse> getAllCategories() {
         try {
@@ -30,6 +31,7 @@ public class CategoryController {
         }
     }
 
+    // Add a new category
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> addCategory(@RequestBody Category name) {
         try {
@@ -40,6 +42,7 @@ public class CategoryController {
         }
     }
 
+    // Get category by id
     @GetMapping("/category/{id}/category")
     public ResponseEntity<ApiResponse> getCategoryById(@PathVariable Long id) {
         try {
@@ -50,6 +53,7 @@ public class CategoryController {
         }
     }
 
+    // Get category by name
     @GetMapping("/category/{name}/category")
     public ResponseEntity<ApiResponse> getCategoryByName(@PathVariable String name) {
         try {
@@ -60,6 +64,7 @@ public class CategoryController {
         }
     }
 
+    // Delete category by id
     @DeleteMapping ("/category/{id}/delete")
     public ResponseEntity<ApiResponse> deleteCategory(@PathVariable Long id) {
         try {
@@ -70,6 +75,7 @@ public class CategoryController {
         }
     }
 
+    // Update category by id
     @PutMapping("/category/{id}/update")
     public ResponseEntity<ApiResponse> updateCategory(@RequestBody Category category, @PathVariable Long id) {
         try {
