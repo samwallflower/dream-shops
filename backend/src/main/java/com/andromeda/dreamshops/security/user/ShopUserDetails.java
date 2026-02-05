@@ -46,7 +46,7 @@ public class ShopUserDetails implements UserDetails {
     }
 
     /*In Spring Security, the `getUsername()` method should return the unique identifier used for user authentication.
-     *In your application, users log in with their email, so returning `email` makes it the username for authentication purposes.
+     *In this application, users log in with their email, so returning `email` makes it the username for authentication purposes.
      */
     @Override
     public String getUsername() {

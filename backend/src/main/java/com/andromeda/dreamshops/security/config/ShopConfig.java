@@ -38,15 +38,6 @@ public class ShopConfig {
             );
 
 
-    /**
-     * Bean for ModelMapper to map between DTOs and entities.
-     * @return a new instance of ModelMapper
-     */
-    @Bean
-    public ModelMapper modelMapper(){
-        return new ModelMapper();
-    }
-
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
