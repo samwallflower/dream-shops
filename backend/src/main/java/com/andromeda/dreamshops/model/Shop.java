@@ -33,6 +33,9 @@ public class Shop {
     @OneToMany(mappedBy = "shop")
     private List<Order> orders;
 
+    @OneToOne(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ShopAccount shopAccount;
+
 
     public Shop(String name) {
         this.name = name;
