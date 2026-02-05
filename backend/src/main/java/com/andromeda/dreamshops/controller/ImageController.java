@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -36,26 +37,17 @@ public class ImageController {
         }
     }
 
-    // download image
-    @GetMapping("/image/download/{imageId}")
-    public ResponseEntity<Resource> downloadImage(@PathVariable Long imageId) throws SQLException {
-        Image image = imageService.getImagebyId(imageId);
-        ByteArrayResource resource = new ByteArrayResource(image.getImage().getBytes(1,(int)image.getImage().length()));
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType(image.getFileType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\""+ image.getFileName() + "\"")
-                .body(resource);
-    }
 
     // update image
     @PutMapping("/image/{imageId}/update")
-    public ResponseEntity<ApiResponse> updateImage(@PathVariable Long imageId, @RequestBody MultipartFile file){
+    public ResponseEntity<ApiResponse> updateImage(@PathVariable Long imageId, @RequestParam MultipartFile file){
         try {
             Image image = imageService.getImagebyId(imageId);
             if (image != null ){
                 imageService.updateImage(file, imageId);
                 return ResponseEntity.ok(new ApiResponse("Update successful", null));
             }
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException | IOException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         }
         return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Update failed!", INTERNAL_SERVER_ERROR));
@@ -72,6 +64,8 @@ public class ImageController {
             }
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Update failed!", INTERNAL_SERVER_ERROR));
     }
@@ -87,6 +81,20 @@ public class ImageController {
                     ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No images found for product id: " + productId, null));
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Error: "+ e.getMessage(), null));
+        }
+    }
+
+    // get image by id
+    @GetMapping("/image/{imageId}")
+    public ResponseEntity<ApiResponse> getImageById(@PathVariable Long imageId) {
+        try {
+            Image image = imageService.getImagebyId(imageId);
+            ImageDto imageDto = imageService.convertToDto(image);
+            return ResponseEntity.ok(new ApiResponse("Image found!", imageDto));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Error: " + e.getMessage(), null));
         }
     }
 }

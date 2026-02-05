@@ -13,7 +13,10 @@ public interface IShopService {
     Shop getShopByName(String name);
     Shop getShopById(Long id);
     Shop updateShop(Long id, UpdateShopRequest shop);
-    void deleteShopById(Long id);
+    void deleteShopById(Long id) throws Exception;
+
+    void deleteShopImages(Long shopId) throws Exception;
+
     Shop getShopByUserId(Long userId);// mainly shop owner id
     boolean existsByUserId(Long userId);
 

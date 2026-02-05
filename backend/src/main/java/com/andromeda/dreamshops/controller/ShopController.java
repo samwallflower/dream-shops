@@ -138,4 +138,15 @@ public class ShopController {
         }
     }
 
+    // delete shop images by shop id
+    @DeleteMapping("/shop/{shopId}/images/delete")
+    public ResponseEntity<ApiResponse> deleteShopImages(@PathVariable Long shopId) {
+        try {
+            shopService.deleteShopImages(shopId);
+            return ResponseEntity.ok(new ApiResponse("Shop images deleted successfully", shopId));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
 }

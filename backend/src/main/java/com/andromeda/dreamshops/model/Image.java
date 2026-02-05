@@ -21,9 +21,8 @@ public class Image {
     private String fileName;
     private String fileType;
 
-    @Lob
-    private Blob image;
-    private String downloadUrl;
+    private String imageUrl;
+    private String publicId;
 
     @ManyToOne
     @JoinColumn(name="product_id")

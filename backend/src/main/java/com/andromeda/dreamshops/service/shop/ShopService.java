@@ -15,6 +15,7 @@ import com.andromeda.dreamshops.repository.ShopRepository;
 import com.andromeda.dreamshops.repository.UserRepository;
 import com.andromeda.dreamshops.request.AddShopRequest;
 import com.andromeda.dreamshops.request.UpdateShopRequest;
+import com.andromeda.dreamshops.service.cloudprovider.ICloudProviderService;
 import com.andromeda.dreamshops.service.order.IOrderService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -32,6 +33,7 @@ public class ShopService implements IShopService{
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final ICloudProviderService cloudProviderService;
 
 
     @Override
@@ -116,7 +118,7 @@ public class ShopService implements IShopService{
     }
 
     @Override
-    public void deleteShopById(Long id) {
+    public void deleteShopById(Long id) throws Exception {
         // check if shop exists
         // if it exists, delete it
         // if not, throw exception
@@ -134,7 +136,14 @@ public class ShopService implements IShopService{
             shopOwner.getRoles().removeIf(role::equals);
             userRepository.save(shopOwner);
         }
+        deleteShopImages(id);
         shopRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteShopImages(Long shopId) throws Exception {
+      String shopFolder = String.format("dreamshops/shops/shop-%d/", shopId);
+        cloudProviderService.deleteFolder(shopFolder);
     }
 
     @Override

@@ -5,22 +5,23 @@ import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.model.Image;
 import com.andromeda.dreamshops.model.Product;
 import com.andromeda.dreamshops.repository.ImageRepository;
+import com.andromeda.dreamshops.service.cloudprovider.ICloudProviderService;
 import com.andromeda.dreamshops.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ImageService implements IImageService{
     private final ImageRepository imageRepository;
     private final IProductService productService;
+    private final ICloudProviderService cloudProviderService;
 
 
     @Override
@@ -30,54 +31,74 @@ public class ImageService implements IImageService{
     }
 
     @Override
-    public void deleteImageById(Long id) {
-        imageRepository.findById(id)
-                .ifPresentOrElse(imageRepository :: delete, ()->{
-                    throw new ResourceNotFoundException("No image found with id: " + id);
-                });
+    public void deleteImageById(Long id) throws IOException {
+        Image image = getImagebyId(id);
+        cloudProviderService.deleteImageByPublicId(image.getPublicId());
+        imageRepository.deleteById(id);
     }
 
     @Override
-    public List<ImageDto> saveImages(List<MultipartFile> files, Long productId) {
+    public List<ImageDto> saveImages(List<MultipartFile> files, Long productId) throws IOException {
         Product product = productService.getProductById(productId);
+
+        if(product.getShop() == null){
+            throw new ResourceNotFoundException("Cannot add images to a product that is not associated with any shop productId: " + productId);
+        }
+        Long shopId = product.getShop().getId();
+
         List<ImageDto> savedImageDto = new ArrayList<>();
+
+        // for every file in files
         for (MultipartFile file : files) {
-            try {
-                Image image = new Image();
-                image.setFileName(file.getOriginalFilename());
-                image.setFileType(file.getContentType());
-                image.setImage(new SerialBlob(file.getBytes()));
-                image.setProduct(product);
+            String folder = buildProductImageFolder(shopId);
 
-                String buildDownloadUrl = "/api/v1/images/image/download/";
-                //String downloadUrl = buildDownloadUrl + image.getId();
-                //image.setDownloadUrl(downloadUrl);
+            String publicId = buildProductImagePublicId(productId, file.getOriginalFilename());
+            Map uploadResult = cloudProviderService.uploadImage(file, folder, publicId, null);
 
-                Image savedImage =  imageRepository.save(image);
+            String imageUrl = (String) uploadResult.get("secure_url");
+            String actualPublicId = (String) uploadResult.get("public_id");
 
-                savedImage.setDownloadUrl(buildDownloadUrl + savedImage.getId());
-                imageRepository.save(savedImage);
 
-                ImageDto imageDto = convertToDto(savedImage);
-                savedImageDto.add(imageDto);
 
-            } catch (SQLException | IOException e) {
-                throw new RuntimeException(e.getMessage());
-            }
+            // saving metadata to database
+            Image image = new Image();
+            image.setFileName(file.getOriginalFilename());
+            image.setFileType(file.getContentType());
+            image.setImageUrl(imageUrl);
+            image.setPublicId(actualPublicId);
+            image.setProduct(product);
+
+            Image savedImage = imageRepository.save(image);
+            savedImageDto.add(convertToDto(savedImage));
+
         }
         return savedImageDto;
     }
 
     @Override
-    public void updateImage(MultipartFile file, Long imageId) {
-        try {
-            Image image = getImagebyId(imageId);
-            image.setFileName(file.getOriginalFilename());
-            image.setImage(new SerialBlob(file.getBytes()));
-            imageRepository.save(image);
-        } catch (SQLException | IOException e) {
-            throw new RuntimeException(e.getMessage());
+    public void updateImage(MultipartFile file, Long imageId) throws IOException{
+        Image existingImage = getImagebyId(imageId);
+        Product product = existingImage.getProduct();
+        if(product == null || product.getShop() == null){
+            throw new ResourceNotFoundException("Cannot update image that is not associated with any product or shop. imageId: " + imageId);
         }
+
+        String folder = buildProductImageFolder(product.getShop().getId());
+
+        // Update image in cloud storage
+
+        Map updatedResult = cloudProviderService.updateImageByPublicId(
+                existingImage.getPublicId(), // old image public id
+                file,                       // new file
+                folder,                     // folder
+                null
+        );
+        String updatedImageUrl = (String) updatedResult.get("secure_url");
+        existingImage.setFileName(file.getOriginalFilename());
+        existingImage.setFileType(file.getContentType());
+        existingImage.setImageUrl(updatedImageUrl);
+        existingImage.setPublicId(updatedResult.get("public_id").toString());
+        imageRepository.save(existingImage);
     }
 
     @Override
@@ -90,7 +111,7 @@ public class ImageService implements IImageService{
         ImageDto imageDto = new ImageDto();
         imageDto.setId(image.getId());
         imageDto.setFileName(image.getFileName());
-        imageDto.setDownloadUrl(image.getDownloadUrl());
+        imageDto.setImageUrl(image.getImageUrl());
         return imageDto;
     }
 
@@ -101,5 +122,20 @@ public class ImageService implements IImageService{
                 .toList();
     }
 
+    // Helper method to build product image folder path
+    // e.g., dreamshops/shops/shop-1/products
+    private String buildProductImageFolder(Long shopId){
+        return String.format("dreamshops/shops/shop-%d/products", shopId);
+    }
 
+    // product-1-ipone-13-pro-max
+    private String buildProductImagePublicId(Long productId, String fileName){
+        String name = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+        String cleanName = name
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-") // replace non-alphanumeric with hyphens
+                .replaceAll("^-+|-+$", "");    // trim leading/trailing hyphens
+
+        return String.format("product-%d-%s",productId, cleanName);
+    }
 }
