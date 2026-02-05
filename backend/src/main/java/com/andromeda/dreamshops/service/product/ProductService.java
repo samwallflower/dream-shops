@@ -1,5 +1,6 @@
 package com.andromeda.dreamshops.service.product;
 
+import com.andromeda.dreamshops.dto.CategoryDto;
 import com.andromeda.dreamshops.dto.ImageDto;
 import com.andromeda.dreamshops.dto.ProductDto;
 import com.andromeda.dreamshops.exceptions.AlreadyExistsException;
@@ -7,6 +8,7 @@ import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.model.*;
 import com.andromeda.dreamshops.repository.*;
 import com.andromeda.dreamshops.request.*;
+import com.andromeda.dreamshops.service.category.ICategoryService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -23,8 +25,10 @@ public class ProductService implements IProductService{
     private final ImageRepository imageRepository;
     private final ModelMapper modelMapper;
     private final ShopRepository shopRepository;
+    private final ICategoryService categoryService;
     /**
-     * @param  request
+     * @param  request request to add product
+     * @param shopId id of the shop
      * @return the saved product
      * @throws AlreadyExistsException if a product with the same name and brand already exists
      */
@@ -43,11 +47,7 @@ public class ProductService implements IProductService{
                     + " , you may update this product instead.");
         }
 
-        Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
-                .orElseGet(()->{
-                    Category newCategory = new Category(request.getCategory().getName());
-                    return categoryRepository.save(newCategory);
-                });
+        Category category = categoryService.resolveCategory(request.getCategory());
 
         request.setCategory(category);
         return productRepository.save(createProduct(request, category, shop));
@@ -72,8 +72,8 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param id
-     * @return
+     * @param id of the product
+     * @return the product
      */
     @Override
     public Product getProductById(Long id) {
@@ -82,7 +82,8 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param id
+     * @param id of the product
+     * @param shopId id of the shop
      */
     @Override
     public void deleteProductById(Long id, Long shopId) {
@@ -92,8 +93,9 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param request
-     * @param productId
+     * @param request to update product
+     * @param productId of the product to be updated
+     * @param shopId id of the shop
      */
     @Override
     public Product updateProduct(ProductUpdateRequest request, Long productId, Long shopId) {
@@ -110,18 +112,16 @@ public class ProductService implements IProductService{
         Optional.ofNullable(request.getPrice()).ifPresent(existingProduct::setPrice);
         Optional.ofNullable(request.getInventory()).ifPresent(existingProduct::setInventory);
         Optional.ofNullable(request.getDescription()).ifPresent(existingProduct::setDescription);
+        Optional.ofNullable(request.getCategory()).ifPresent(categoryRequest->{
+            Category category = categoryService.resolveCategory(request.getCategory());
+            existingProduct.setCategory(category);
+        });
 
-        Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
-                .orElseGet(()->{
-                    Category newCategory = new Category(request.getCategory().getName());
-                    return categoryRepository.save(newCategory);
-                });
-        existingProduct.setCategory(category);
         return existingProduct;
     }
 
     /**
-     * @return
+     * @return all products
      */
     @Override
     public List<Product> getAllProducts() {
@@ -129,8 +129,8 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param category
-     * @return
+     * @param category name of the category of which products we want
+     * @return a list of the products
      */
     @Override
     public List<Product> getAllProductsByCategory(String category) {
@@ -138,8 +138,8 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param brand
-     * @return
+     * @param brand of the products to be fetched
+     * @return list of products
      */
     @Override
     public List<Product> getProductsByBrand(String brand) {
@@ -147,8 +147,8 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param name
-     * @return
+     * @param name of the products to be fetched
+     * @return list of products
      */
     @Override
     public List<Product> getProductsByName(String name) {
@@ -156,30 +156,35 @@ public class ProductService implements IProductService{
     }
 
     /**
-     * @param brand
-     * @param name
-     * @return
+     * @param brand of the products
+     * @param name of the products
+     * @return list of products
      */
+    // Ex. get all products of brand Samsung and name Galaxy S21
+    // as in all products of brand Samsung having name Galaxy S21
+    // sold by all the shops in the platform
     @Override
     public List<Product> getProductByBrandAndName(String brand, String name) {
         return productRepository.findByBrandAndName(brand, name);
     }
 
     /**
-     * @param category
-     * @param brand
-     * @return
+     * @param category of the products
+     * @param brand of the products
+     * @return list of products
      */
+    // Ex. get all products of category Phones and brand Apple
     @Override
     public List<Product> getProductByCategoryAndBrand(String category, String brand) {
         return productRepository.findByCategoryNameAndBrand(category, brand);
     }
 
     /**
-     * @param brand
-     * @param name
-     * @return
+     * @param brand of the products
+     * @param name of the products
+     * @return count of products
      */
+    // How many products are there of brand Samsung and name Galaxy S21
     @Override
     public Long countProductByBrandAndName(String brand, String name) {
         return productRepository.countByBrandAndName(brand, name);
@@ -194,13 +199,23 @@ public class ProductService implements IProductService{
 
     @Override
     public ProductDto convertToDto(Product product) {
-        ProductDto productDto = modelMapper.map(product, ProductDto.class);
-        List<Image> images = imageRepository.findByProductId(product.getId());
-        List<ImageDto> imageDtos = images.stream()
-                .map(image -> modelMapper.map(image, ImageDto.class))
-                .toList();
-        productDto.setImages(imageDtos);
         return modelMapper.map(product, ProductDto.class);
+    }
+
+    // if i want to get all products under Electronics category
+    // it should return all products under Electronics and its sub-categories
+    // which may be Laptops, Mobiles, Televisions etc.
+    // there is an issue here product has category - Tv , Phone, Laptop etc
+    // category has parentCategory - Electronics
+    // products necessarily cannot be fetched under electronics
+    // Alternatively we can get all the sub categories of electronics
+    // then fetch all products under those sub-categories
+    @Override
+    public List<Product> getAllProductsByParentCategory(String parentCategoryName) {
+        List<Category> subCategories = categoryService.getAllSubCategoriesByParentName(parentCategoryName);
+        return subCategories.stream()
+                .flatMap(category -> productRepository.findByCategoryName(category.getName()).stream())
+                .toList();
     }
 
     // shop related product methods
@@ -246,4 +261,5 @@ public class ProductService implements IProductService{
     public Long countProductsByShopId(Long shopId) {
         return productRepository.countByShopId(shopId);
     }
+
 }

@@ -184,6 +184,24 @@ public class ProductController {
         }
     }
 
+    // get all products under a parent category
+    // ex - electronics , computers etc.
+    @GetMapping("/product/by/parent-category/all")
+    public ResponseEntity<ApiResponse> getAllProductsByParentCategory(@RequestParam String parentCategory){
+        try {
+            List<Product> products = productService.getAllProductsByParentCategory(parentCategory);
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return !convertedProducts.isEmpty()?
+                    ResponseEntity.ok(new ApiResponse("Products found for " + parentCategory +" category: ", convertedProducts)):
+                    ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found for the "+parentCategory+" category!!", null));
+        } catch (ResourceNotFoundException e){
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("Error: "+ e.getMessage(), null));
+        }catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+        }
+
+    }
+
     // shop related product endpoints
     // product 1 in shop 2
     @GetMapping("/product/by/shop-and-product-id")

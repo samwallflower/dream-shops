@@ -26,6 +26,8 @@ public interface IProductService {
 
     ProductDto convertToDto(Product product);
 
+    List<Product> getAllProductsByParentCategory(String parentCategoryName);
+
     // shop related product methods
     // MacBook Pro 14 in shop with id 1
     Product getProductByShopIdAndProductId(Long shopId, Long productId);
