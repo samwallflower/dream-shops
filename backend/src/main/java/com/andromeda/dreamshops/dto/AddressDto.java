@@ -10,14 +10,14 @@ import java.io.Serializable;
  */
 @Data
 public class AddressDto implements Serializable {
-    Long id;
-    String street;
-    String houseNumber;
-    String floor;
-    String city;
-    String state;
-    String zip;
-    String country;
-    boolean isDefault;
-    AddressType addressType;
+    private Long id;
+    private String street;
+    private String houseNumber;
+    private String floor;
+    private String city;
+    private String state;
+    private String zip;
+    private String country;
+    private boolean isDefault;
+    private String addressType;
 }

@@ -1,5 +1,6 @@
 package com.andromeda.dreamshops.request;
 
+import com.andromeda.dreamshops.enums.AddressType;
 import lombok.Data;
 
 @Data
