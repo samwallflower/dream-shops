@@ -52,6 +52,7 @@ public class ShopAccount {
     private Shop shop;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp

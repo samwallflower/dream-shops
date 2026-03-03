@@ -5,10 +5,7 @@ import com.andromeda.dreamshops.dto.ProductDto;
 import com.andromeda.dreamshops.dto.ShopDto;
 import com.andromeda.dreamshops.exceptions.AlreadyExistsException;
 import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
-import com.andromeda.dreamshops.model.Product;
-import com.andromeda.dreamshops.model.Role;
-import com.andromeda.dreamshops.model.Shop;
-import com.andromeda.dreamshops.model.User;
+import com.andromeda.dreamshops.model.*;
 import com.andromeda.dreamshops.repository.ProductRepository;
 import com.andromeda.dreamshops.repository.RoleRepository;
 import com.andromeda.dreamshops.repository.ShopRepository;
@@ -62,6 +59,10 @@ public class ShopService implements IShopService{
         if(!user.getRoles().contains(role))
             user.getRoles().add(role);
         //assign SHOP_OWNER role to the user only if the user doesn't have it already
+
+        ShopAccount shopAccount = new ShopAccount();
+        shopAccount.setShop(newShop);
+        newShop.setShopAccount(shopAccount);
 
         return shopRepository.save(newShop);
     }
