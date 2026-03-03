@@ -28,7 +28,7 @@ public class Address {
     private boolean isDefault = false;
 
     @Enumerated(EnumType.STRING)
-    private AddressType addressType; // SHIPPING , BILLING, BOTH
+    private AddressType addressType; // SHIPPING , BILLING
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_account_id", referencedColumnName = "id")
