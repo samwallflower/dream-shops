@@ -5,10 +5,12 @@ import com.andromeda.dreamshops.exceptions.AlreadyExistsException;
 import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.model.Role;
 import com.andromeda.dreamshops.model.User;
+import com.andromeda.dreamshops.model.UserAccount;
 import com.andromeda.dreamshops.repository.RoleRepository;
 import com.andromeda.dreamshops.repository.UserRepository;
 import com.andromeda.dreamshops.request.CreateUserRequest;
 import com.andromeda.dreamshops.request.UpdateUserRequest;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
@@ -27,6 +29,7 @@ public class UserService implements IUserService{
     private final RoleRepository roleRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
+    private final IUserAccountService userAccountService;
 
     @Override
     public User getUserById(Long userId) {
@@ -35,6 +38,7 @@ public class UserService implements IUserService{
     }
 
     @Override
+    @Transactional
     public User createUser(CreateUserRequest request) {
         return Optional.of(request).filter(user -> !userRepository.existsByEmail(user.getEmail()))
                 .map(req -> {
@@ -46,7 +50,10 @@ public class UserService implements IUserService{
                     user.setEmail(req.getEmail());
                     user.setPassword(passwordEncoder.encode(req.getPassword()));
                     user.setRoles(Set.of(userRole));
-                    return userRepository.save(user);
+                    User savedUser = userRepository.save(user);
+                    UserAccount userAccount = userAccountService.createUserAccount(savedUser, req.getFirstName(), req.getLastName());
+                    savedUser.setUserAccount(userAccount);
+                    return userRepository.save(savedUser);
                 })
                 .orElseThrow(() -> new AlreadyExistsException("Oops!! User with email already exists: " + request.getEmail()));
     }

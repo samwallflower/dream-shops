@@ -58,6 +58,9 @@ public class UserAccount {
     @OneToMany(mappedBy = "userAccount", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> savedAddresses;
 
+    public UserAccount(String username) {
+        this.username = username;
+    }
 
     public UserAccount(String username, LocalDate dateOfBirth, Gender gender) {
         this.username = username;

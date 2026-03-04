@@ -11,8 +11,8 @@ public interface IShopAccountService {
     ShopAccountDto getShopAccountByShopId(Long shopId);
     ShopAccountDto updateShopAccount(Long shopId, UpdateShopAccountRequest request);
 
-    ShopAccountDto updateShopLogo(Long shopId, MultipartFile logo);
-    ShopAccountDto updateShopBanner(Long shopId, MultipartFile banner);
+    String updateShopLogo(Long shopId, MultipartFile logo);
+    String updateShopBanner(Long shopId, MultipartFile banner);
 
     void removeShopLogo(Long shopId);
     void removeShopBanner(Long shopId);

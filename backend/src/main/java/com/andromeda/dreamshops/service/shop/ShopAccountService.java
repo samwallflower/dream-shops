@@ -50,7 +50,7 @@ public class ShopAccountService implements IShopAccountService{
 
     @Override
     @Transactional
-    public ShopAccountDto updateShopLogo(Long shopId, MultipartFile logo) {
+    public String updateShopLogo(Long shopId, MultipartFile logo) {
         ShopAccount shopAccount = shopAccountRepository.findByShopId(shopId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shop account not found for shop ID: " + shopId));
 
@@ -65,14 +65,14 @@ public class ShopAccountService implements IShopAccountService{
                     "c_fill,h_200,w_200");
             String logoUrl = (String) uploadResult.get("secure_url");
             shopAccount.setLogoUrl(logoUrl);
-            return convertToDto(shopAccountRepository.save(shopAccount));
+            return shopAccountRepository.save(shopAccount).getLogoUrl();
         } catch (IOException e) {
             throw new ResourceProcessingException("Failed to upload logo: " + e.getMessage());
         }
     }
 
     @Override
-    public ShopAccountDto updateShopBanner(Long shopId, MultipartFile banner) {
+    public String updateShopBanner(Long shopId, MultipartFile banner) {
             ShopAccount shopAccount = shopAccountRepository.findByShopId(shopId)
                     .orElseThrow(() -> new ResourceNotFoundException("Shop account not found for shop ID: " + shopId));
 
@@ -87,7 +87,7 @@ public class ShopAccountService implements IShopAccountService{
                         "c_fill,h_400,w_1200");
                 String bannerUrl = (String) uploadResult.get("secure_url");
                 shopAccount.setBannerUrl(bannerUrl);
-                return convertToDto(shopAccountRepository.save(shopAccount));
+                return shopAccountRepository.save(shopAccount).getBannerUrl();
             } catch (IOException e) {
                 throw new ResourceProcessingException("Failed to upload banner: " + e.getMessage());
             }
