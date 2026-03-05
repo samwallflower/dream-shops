@@ -3,6 +3,7 @@ package com.andromeda.dreamshops.service.shop;
 import com.andromeda.dreamshops.dto.ShopAccountDto;
 import com.andromeda.dreamshops.exceptions.ResourceNotFoundException;
 import com.andromeda.dreamshops.exceptions.ResourceProcessingException;
+import com.andromeda.dreamshops.model.Shop;
 import com.andromeda.dreamshops.model.ShopAccount;
 import com.andromeda.dreamshops.repository.ShopAccountRepository;
 import com.andromeda.dreamshops.request.UpdateShopAccountRequest;
@@ -26,6 +27,24 @@ public class ShopAccountService implements IShopAccountService{
     private final ModelMapper modelMapper;
 
     @Override
+    @Transactional
+    public ShopAccount createShopAccountForShop(Shop shop) {
+            ShopAccount shopAccount = new ShopAccount();
+            shopAccount.setShop(shop);
+            shopAccount.setSlug(generateSlug(shop.getName()));
+            shopAccount.setAnnouncement("");
+            shopAccount.setOpeningHours(null);
+            shopAccount.setClosingHours(null);
+            shopAccount.setDashboardColor("#FFFFFF");
+            shopAccount.setTermsOfService("");
+            shopAccount.setPrivacyPolicy("");
+            shopAccount.setReturnPolicy("");
+            shopAccount.setLogoUrl(null);
+            shopAccount.setBannerUrl(null);
+            return shopAccountRepository.save(shopAccount);
+    }
+
+    @Override
     public ShopAccountDto getShopAccountByShopId(Long shopId) {
         return shopAccountRepository.findByShopId(shopId)
                 .map(this::convertToDto)
@@ -33,6 +52,7 @@ public class ShopAccountService implements IShopAccountService{
     }
 
     @Override
+    @Transactional
     public ShopAccountDto updateShopAccount(Long shopId, UpdateShopAccountRequest request) {
         ShopAccount shopAccount = shopAccountRepository.findByShopId(shopId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shop account not found for shop ID: " + shopId));
@@ -72,6 +92,7 @@ public class ShopAccountService implements IShopAccountService{
     }
 
     @Override
+    @Transactional
     public String updateShopBanner(Long shopId, MultipartFile banner) {
             ShopAccount shopAccount = shopAccountRepository.findByShopId(shopId)
                     .orElseThrow(() -> new ResourceNotFoundException("Shop account not found for shop ID: " + shopId));
@@ -94,11 +115,12 @@ public class ShopAccountService implements IShopAccountService{
     }
 
     @Override
+    @Transactional
     public void removeShopLogo(Long shopId) {
         ShopAccount shopAccount = shopAccountRepository.findByShopId(shopId)
                 .orElseThrow(()-> new ResourceNotFoundException("Shop account not found for shop ID: " + shopId));
 
-        if(shopAccount.getLogoUrl() == null|| shopAccount.getBannerUrl().isEmpty()) {
+        if(shopAccount.getLogoUrl() == null|| shopAccount.getLogoUrl().isEmpty()) {
             return;
         }
         try{
@@ -112,6 +134,7 @@ public class ShopAccountService implements IShopAccountService{
     }
 
     @Override
+    @Transactional
     public void removeShopBanner(Long shopId) {
         ShopAccount shopAccount = shopAccountRepository.findByShopId(shopId)
                 .orElseThrow(()-> new ResourceNotFoundException("Shop account not found for shop ID: " + shopId));
@@ -150,5 +173,15 @@ public class ShopAccountService implements IShopAccountService{
         return shopAccountRepository.findById(id)
                 .map(this::convertToDto)
                 .orElseThrow(()-> new ResourceNotFoundException("Shop account not found for ID: " + id));
+    }
+
+    private String generateSlug(String shopName) {
+        String baseSlug = shopName.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+        String slug = baseSlug;
+        int counter = 1;
+        while (shopAccountRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-" + counter++;
+        }
+        return slug;
     }
 }

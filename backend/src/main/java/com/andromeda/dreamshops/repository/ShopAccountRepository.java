@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface ShopAccountRepository extends JpaRepository<ShopAccount, Long> {
 
     Optional<ShopAccount> findByShopId(Long shopId);
+    boolean existsBySlug(String slug);
 }

@@ -14,6 +14,7 @@ import com.andromeda.dreamshops.request.AddShopRequest;
 import com.andromeda.dreamshops.request.UpdateShopRequest;
 import com.andromeda.dreamshops.service.cloudprovider.ICloudProviderService;
 import com.andromeda.dreamshops.service.order.IOrderService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -31,9 +32,11 @@ public class ShopService implements IShopService{
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final ICloudProviderService cloudProviderService;
+    private final IShopAccountService shopAccountService;
 
 
     @Override
+    @Transactional
     public Shop addShop(AddShopRequest shop, Long userId) {
         //check if the shop with the same name already exists
         //so we don't have duplicate shop names
@@ -60,8 +63,7 @@ public class ShopService implements IShopService{
             user.getRoles().add(role);
         //assign SHOP_OWNER role to the user only if the user doesn't have it already
 
-        ShopAccount shopAccount = new ShopAccount();
-        shopAccount.setShop(newShop);
+        ShopAccount shopAccount = shopAccountService.createShopAccountForShop(newShop);
         newShop.setShopAccount(shopAccount);
 
         return shopRepository.save(newShop);
@@ -92,6 +94,7 @@ public class ShopService implements IShopService{
     }
 
     @Override
+    @Transactional
     public Shop updateShop(Long id, UpdateShopRequest shop) {
         // find the shop by id
         // if found update the shop details
@@ -119,6 +122,7 @@ public class ShopService implements IShopService{
     }
 
     @Override
+    @Transactional
     public void deleteShopById(Long id) throws Exception {
         // check if shop exists
         // if it exists, delete it
@@ -142,9 +146,10 @@ public class ShopService implements IShopService{
     }
 
     @Override
+    @Transactional
     public void deleteShopImages(Long shopId) throws Exception {
       String shopFolder = String.format("dreamshops/shops/shop-%d/", shopId);
-        cloudProviderService.deleteFolder(shopFolder);
+      cloudProviderService.deleteFolder(shopFolder);
     }
 
     @Override

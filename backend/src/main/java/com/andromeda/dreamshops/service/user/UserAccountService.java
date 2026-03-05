@@ -10,7 +10,7 @@ import com.andromeda.dreamshops.model.User;
 import com.andromeda.dreamshops.model.UserAccount;
 import com.andromeda.dreamshops.repository.UserAccountRepository;
 import com.andromeda.dreamshops.request.UpdateUserAccountRequest;
-import com.andromeda.dreamshops.service.cloudprovider.CloudProviderService;
+import com.andromeda.dreamshops.service.cloudprovider.ICloudProviderService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -27,7 +27,8 @@ import java.util.Optional;
 public class UserAccountService implements IUserAccountService {
     private final UserAccountRepository userAccountRepository;
     private final ModelMapper modelMapper;
-    private final CloudProviderService cloudProviderService;
+    private final ICloudProviderService cloudProviderService;
+
     @Override
     @Transactional
     public UserAccount createUserAccount(User user, String firstName, String lastName) {
@@ -38,6 +39,7 @@ public class UserAccountService implements IUserAccountService {
     }
 
     @Override
+    @Transactional
     public UserAccountDto updateUserAccount(Long userId, UpdateUserAccountRequest request) {
 
         UserAccount userAccount = userAccountRepository.findUserAccountByUserId(userId)
@@ -84,6 +86,7 @@ public class UserAccountService implements IUserAccountService {
     }
 
     @Override
+    @Transactional
     public String updateProfilePicture(Long userId, MultipartFile profilePicture) {
         UserAccount userAccount = userAccountRepository.findUserAccountByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User account not found for user id: " + userId));
@@ -106,6 +109,7 @@ public class UserAccountService implements IUserAccountService {
     }
 
     @Override
+    @Transactional
     public void removeProfilePicture(Long userId) {
         UserAccount userAccount = userAccountRepository.findUserAccountByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User account not found for user id: " + userId));

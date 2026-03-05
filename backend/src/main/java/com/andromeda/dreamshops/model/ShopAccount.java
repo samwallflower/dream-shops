@@ -57,4 +57,5 @@ public class ShopAccount {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
 }

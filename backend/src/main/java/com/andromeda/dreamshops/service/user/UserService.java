@@ -10,6 +10,7 @@ import com.andromeda.dreamshops.repository.RoleRepository;
 import com.andromeda.dreamshops.repository.UserRepository;
 import com.andromeda.dreamshops.request.CreateUserRequest;
 import com.andromeda.dreamshops.request.UpdateUserRequest;
+import com.andromeda.dreamshops.service.auth.AuthVerificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -30,6 +31,7 @@ public class UserService implements IUserService{
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final IUserAccountService userAccountService;
+    private final AuthVerificationService authVerificationService;
 
     @Override
     public User getUserById(Long userId) {
@@ -53,7 +55,9 @@ public class UserService implements IUserService{
                     User savedUser = userRepository.save(user);
                     UserAccount userAccount = userAccountService.createUserAccount(savedUser, req.getFirstName(), req.getLastName());
                     savedUser.setUserAccount(userAccount);
-                    return userRepository.save(savedUser);
+                    User finalUser = userRepository.save(savedUser);
+                    authVerificationService.sendVerificationCode(finalUser);
+                    return finalUser;
                 })
                 .orElseThrow(() -> new AlreadyExistsException("Oops!! User with email already exists: " + request.getEmail()));
     }

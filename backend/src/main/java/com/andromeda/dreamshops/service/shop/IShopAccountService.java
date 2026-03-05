@@ -1,6 +1,7 @@
 package com.andromeda.dreamshops.service.shop;
 
 import com.andromeda.dreamshops.dto.ShopAccountDto;
+import com.andromeda.dreamshops.model.Shop;
 import com.andromeda.dreamshops.model.ShopAccount;
 import com.andromeda.dreamshops.request.UpdateShopAccountRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface IShopAccountService {
+    ShopAccount createShopAccountForShop(Shop shop);
     ShopAccountDto getShopAccountByShopId(Long shopId);
     ShopAccountDto updateShopAccount(Long shopId, UpdateShopAccountRequest request);
 
